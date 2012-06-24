@@ -58,4 +58,14 @@ symlink_with_checks ".bashrc" "$INSTALL_TO/dotfiles/bash/.bashrc"
 symlink_with_checks ".bash_aliases" "$INSTALL_TO/dotfiles/bash/.bash_aliases"
 symlink_with_checks ".gitconfig" "$INSTALL_TO/dotfiles/git/.gitconfig"
 
+echo "You should also do the following."
+echo "$ mkdir ~/.fonts"
+echo "$ cp $INSTALL_TO/dotfiles/fonts/Envy* ~/.fonts"
+echo "$ sudo fc-cache -f -v"
+echo
+
+echo "If you haven't already, you should run this too:"
+echo "wget -O - https://github.com/sumpygump/vimrc/raw/master/autoinstall.sh | sh"
+echo
+
 echo "Done."
