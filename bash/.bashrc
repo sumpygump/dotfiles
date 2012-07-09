@@ -5,6 +5,20 @@
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
 
+# set PATH so it includes user's private bin if it exists
+if [ -d ~/bin ] ; then
+    PATH=~/bin:"${PATH}"
+fi
+
+# Add current dir to path
+export PATH=./:$PATH
+
+# the default umask is set in /etc/profile
+umask 002
+
+# Set preferred editor
+export EDITOR=/usr/bin/vim
+
 # don't put duplicate lines in the history. See bash(1) for more options
 # ... or force ignoredups and ignorespace
 HISTCONTROL=ignoredups:ignorespace
