@@ -1,0 +1,246 @@
+#!/usr/bin/env php
+<?php
+/**
+ * ascimg : a program to display images in the terminal using jp2a (ascii 
+ * art).
+ *
+ * It can display a single image or multiple images
+ *     Example: ascimg *.jpg
+ *
+ * Requires jp2a and imagemagick (for handling png files)
+ *     apt-get install jp2a imagemagick
+ */
+
+$program = array_shift($argv);
+
+if (!isset($argv[0])) {
+    echo "Missing filename.\n";
+    echo "Usage: ascimg <filename>\n";
+    exit(1);
+}
+
+$args = new ConsoleParams($argv, 'filename');
+
+if ($args->c) {
+    passthru('clear');
+}
+
+if (is_array($args->filename)) {
+    $max = count($args->filename);
+    for ($i = 0; $i < $max; $i++) {
+        $filename = $args->filename[$i];
+        displayImage($filename, $args->size, $args->color);
+
+        echo $filename . " - " . ($i + 1) . " of $max";
+
+        if ($i == $max - 1) {
+            echo " - END ";
+        } else {
+            echo " - Press enter for next ";
+        }
+
+        $input = trim(fgets(STDIN));
+    }
+    echo "\n";
+} else {
+    displayImage($args->filename, $args->size, $args->color);
+}
+exit(0);
+
+function displayImage($filename, $size = '', $includeColors = null)
+{
+    if (!file_exists($filename)) {
+        return false;
+    }
+
+    $extension = pathinfo($filename, PATHINFO_EXTENSION);
+
+    $cmdColors = '';
+    if (true == $includeColors || null === $includeColors) {
+        $cmdColors = " --colors";
+    }
+
+    $cmdSize = '';
+    switch ($size) {
+    case 'small':
+        $cmdSize = ' --height=12';
+        break;
+    case 'medium':
+        $cmdSize = ' --height=24';
+        break;
+    case 'large':
+        $cmdSize = ' --height=48';
+        break;
+    case '':
+        // default -- pass through
+    case 'fit':
+        $cmdSize = ' --term-fit';
+        break;
+    default:
+        $cmdSize = ' --size=' . $size;
+        break;
+    }
+
+    switch (strtolower($extension)) {
+    case 'jpg':
+    case 'jpeg':
+        $cmd = "jp2a -b$cmdColors $cmdSize \"" . $filename . "\"";
+        break;
+    case 'png':
+        $cmd = "convert \"$filename\" jpg:- "
+            . "| jp2a -b$cmdColors $cmdSize -";
+        break;
+    default:
+        return false;
+        break;
+    }
+
+    passthru($cmd);
+}
+
+/**
+ * Console Params
+ *
+ * @author Jansen Price <jansen.price@gmail.com>
+ * @version $Id$
+ */
+class ConsoleParams
+{
+    /** 
+     * Data storage
+     *
+     * @var array
+     */
+    private $_data = array();
+
+    protected $_firstArgument = 'id';
+
+    /** 
+     * Constructor
+     *
+     * @param mixed $args
+     * @return void
+     */
+    public function __construct($args, $firstArgument = null)
+    {   
+        if (null != $firstArgument) {
+            $this->_firstArgument = $firstArgument;
+        }   
+        $this->parseArgs($args);
+    }   
+
+    /** 
+     * Parse args
+     *
+     * @param mixed $args
+     * @return void
+     */
+    public function parseArgs($args)
+    {   
+        foreach ($args as $arg) {
+            if (substr($arg, 0, 2) == '--') {
+                $this->parseAssignmentArg($arg);
+            } elseif (substr($arg, 0, 1) == '-') {
+                $this->assign(substr($arg, 1), true);
+            } else {
+                $this->assignMulti($this->_firstArgument, trim($arg));
+            }   
+        }   
+    }   
+
+   /**
+     * Parse an assignment argument (--id=xx)
+     *
+     * @param mixed $arg
+     * @return void
+     */
+    public function parseAssignmentArg($arg)
+    {  
+        $arg = trim(str_replace('--', '', $arg));
+
+        $parts = explode('=', $arg);
+        $key   = array_shift($parts);
+        $value = implode('=', $parts);
+
+        if ($value == 'false') {
+            $value = false;
+        }
+
+        $this->assign($key, $value);
+    }
+
+    /**
+     * Assign a data item
+     *
+     * @param mixed $key
+     * @param mixed $value
+     * @return void
+     */
+    public function assign($key, $value)
+    {  
+        $this->_data[$key] = $value;
+    }
+
+    /**
+     * Assign a value (allowing for multiples)
+     *
+     * @param string $key
+     * @param mixed $value
+     * @return void
+     */
+    public function assignMulti($key, $value)
+    {
+        if (!isset($this->_data[$key])) {
+            // If it hasn't been set yet, just assign as normal
+            $this->assign($key, $value);
+            return;
+        }
+
+        $originalValue = $this->__get($key);
+
+        if (is_array($originalValue)) {
+            // If it is already an array, add to it.
+            $newValue = array_merge($originalValue, array($value));
+        } else {
+            $newValue = array($originalValue, $value);
+        }
+
+        $this->assign($key, $newValue);
+    }
+
+    /**
+     * Get all values
+     * 
+     * @return array
+     */
+    public function getAll()
+    {  
+        return $this->_data;
+    }
+
+    /**
+     * Get a data item by key
+     *
+     * @param mixed $key
+     * @return void
+     */
+    public function __get($key)
+    {  
+        if (isset($this->_data[$key])) {
+            return $this->_data[$key];
+        }
+        return null;
+    }
+
+    /**
+     * Set a data item
+     *
+     * @param mixed $key
+     * @param mixed $value
+     * @return void
+     */
+    public function __set($key, $value)
+    {  
+        $this->assign($key, $value);
+    }
+}

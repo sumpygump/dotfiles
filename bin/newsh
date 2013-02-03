@@ -1,0 +1,28 @@
+#!/bin/bash
+if [ -z "$1" ]; then
+    echo newsh : A script to create a new shell script in your home bin directory
+    echo usage: $0 filename
+    exit
+fi
+
+NF=~/bin/$1
+
+# cat the file, if the return value is true (no error), 
+# the file already exists
+if [ -e $NF ]; then
+    echo file $1 already exists.
+    echo use esh $1 to edit.
+    exit
+fi
+
+# create the file
+touch $NF
+
+# add execute rights
+chmod a+x $NF
+
+# put the first line in the file
+echo \#\!/bin/bash > $NF
+
+# edit (I like vim the best)
+vim $NF

@@ -1,0 +1,100 @@
+#!/bin/bash
+: ${DIALOG=dialog}
+: ${MPLAYER=mplayer}
+
+version="playmov-0.1"
+
+red() {
+    if [ -t 0 ]; then
+        printf "\E[31m" 
+    fi
+}
+op() {
+    if [ -t 0 ]; then
+        printf "\E[39;49m"
+    fi
+}
+
+HASDIALOG=false
+
+SCRIPT=$(readlink -f $0)
+SCRIPTPATH=`dirname $SCRIPT`
+
+displayUsage() {
+    echo "$version - Play movies selecting from a list"
+    echo
+}
+
+# Handle --help arg
+if [ -n "$1" -a "$1" == "--help" ]; then
+    displayUsage
+    exit 1
+fi
+
+# Handle --help arg
+if [ -n "$1" -a "$1" == "--version" ]; then
+    echo $version
+    exit 1
+fi
+
+# Detect if dialog is available
+which $DIALOG > /dev/null
+if [ $? -eq 1 ]; then
+    red; echo "Warning: $DIALOG not installed. Reading movie from args"; op
+    HASDIALOG=false
+else
+    HASDIALOG=true
+fi
+
+# Detect if mplayer is available
+which $MPLAYER > /dev/null
+if [ $? -eq 1 ]; then
+    red; echo "Error: $MPLAYER not installed. $MPLAYER is required to watch movies"; op
+    exit 3
+fi
+
+hasSelectedMovie=0
+echo ${MOVIES[@]}
+
+# Process arg
+if [ -z $1 ]; then
+    if [ $HASDIALOG == true ]; then
+        while [ $hasSelectedMovie == 0 ]
+        do
+            MOVIES=(`ls -d {*/,*.{mp4,mkv,avi}} 2>/dev/null | awk '{printf "%s %10s ", $1, $1}'`)
+
+            value=$(dialog --clear --title "Movies" --menu "Select movie" 0 0 0 .. .. "${MOVIES[@]}" 2>&1 >/dev/tty)
+            retval=$?
+            case $retval in
+                0)
+                    clear;
+                    movie=$value
+                ;;
+                1)
+                    #User chose "Cancel"
+                    clear
+                    exit 0
+                ;;
+                255)
+                    clear
+                    exit 255
+                ;;
+            esac
+
+            # If user selected a directory, move into that directory
+            if [ -d $movie ]; then
+                cd $movie
+            else
+                #hasSelectedMovie=1
+                mplayerCmd="$MPLAYER -nolirc -fs $movie"
+                $mplayerCmd
+            fi
+        done
+    else
+        red;echo 'No argument.';op
+        displayUsage
+    fi
+else
+    movie=$1
+fi
+

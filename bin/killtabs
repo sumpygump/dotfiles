@@ -1,0 +1,109 @@
+#!/usr/bin/php
+<?php
+
+$path = isset($argv[1]) ? $argv[1] : '';
+
+$killtabs = new Killtabs($path);
+
+/**
+ * Kill tabs in files.
+ *
+ * Replaces tab characters with four spaces
+ * 
+ * @package Killtabs
+ * @author Jansen Price <jansen.price@gmail.com>
+ * @version $Id$
+ */
+class Killtabs {
+
+    /**
+     * Constructor
+     * 
+     * @param mixed $path Path to search for files
+     * @return void
+     */
+    public function __construct($path)
+    {
+        $files = self::_rglob($path . '*.{php,js,css,tpl}', GLOB_BRACE);
+
+        if (count($files) > 1000) {
+            echo 'Attempting to change over 1000 files. Are you sure? (y/N) ';
+            $input = fgets(STDIN);
+            if (strtolower(trim($input)) == 'y') {
+                $this->execute($files);
+                $this->_exit();
+            }
+        } else {
+            $this->execute($files);
+            $this->_exit();
+        }
+    }
+
+    /**
+     * Execute the action of replace the tab characters in files
+     * 
+     * @param mixed $files
+     * @return void
+     */
+    public function execute($files)
+    {
+        echo "\n" . count($files) . " files.";
+        echo "\n";
+        $replaceCount = 0;
+
+        foreach ($files as $file) {
+            $contents = file_get_contents($file);
+
+            if (strpos($contents, "\t")) {
+                echo ':';
+                $contents = str_replace("\t", '    ', $contents);
+                file_put_contents($file, $contents);
+                $replaceCount++;
+            } else {
+                echo '.';
+            }
+        }
+
+        echo "\nReplaced tabs in " . $replaceCount . " files.\n";
+
+        echo "Done.\n";
+    }
+
+    /**
+     * Exit
+     * 
+     * @param int $status Return status
+     * @return void
+     */
+    protected function _exit($status = 0)
+    {
+        exit($status);
+    }
+
+    /**
+     * Recursive glob
+     * 
+     * @param mixed $pattern The pattern to search on
+     * @param int $flags Flags to pass to glob
+     * @param string $path The path to glob in
+     * @return array
+     */
+    protected static function _rglob($pattern, $flags = 0, $path = '')
+    {
+        if (!$path && ($dir = dirname($pattern)) != '.') {
+            if ($dir == '\\' || $dir == '/') {
+                $dir = '';
+            }
+            return self::_rglob(basename($pattern), $flags, $dir . '/');
+        }
+
+        $paths = glob($path . '*', GLOB_ONLYDIR | GLOB_NOSORT);
+        $files = glob($path . $pattern, $flags);
+
+        foreach ($paths as $p) {
+            $files = array_merge($files, self::_rglob($pattern, $flags, $p . '/'));
+        }
+
+        return $files;
+    }
+}

@@ -1,0 +1,58 @@
+# Foreground colors
+black()     { 
+printf "\E[30m"
+}
+red()       {
+printf "\E[31m" 
+}
+green()     { 
+printf "\E[32m"
+}
+yellow()    {
+printf "\E[33m"
+}
+blue()      {
+printf "\E[34m"
+}
+magenta()   {
+printf "\E[35m"
+}
+cyan()      {
+printf "\E[36m"
+}
+white()     {
+printf "\E[37m"
+}
+
+bold() {
+printf "\E[1m"
+}
+unbold() {
+printf "\E[0m"
+}
+
+# Background colors
+bblack() {
+printf "\E[40m"
+}
+bred() {
+printf "\E[41m"
+}
+bgreen() {
+printf "\E[42m"
+}
+byellow() {
+printf "\E[43m"
+}
+bblue() {
+printf "\E[44m"
+}
+bmagenta() {
+printf "\E[45m"
+}
+bcyan() {
+printf "\E[46m"
+}
+bwhite() {
+printf "\E[47m"
+}

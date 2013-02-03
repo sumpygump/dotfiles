@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# This script shows a breakdown of lines containing a specific string in php
+# files in a given directory.
+#
+# It's useful to see the breakdown of docblock tags (ie. @author) across
+# several files within a directory.
+
+UNIQ=true
+
+# Process options
+while getopts "dn" opt; do
+    case $opt in
+        n)
+            UNIQ=false
+            ;;
+    esac
+done
+
+# Shift off the used args
+shift $((OPTIND-1))
+
+if [ -z "$1" -o -z "$2" ]; then
+    echo "usage: $0 <param> <path>"
+    exit
+fi
+
+if [ $UNIQ == true ] ; then
+    cmd="egrep -r --include=\*.php -h '$1' $2 | sort | uniq -c | sort -nr"
+    echo $cmd
+    egrep -r --include=\*.php -h $1 $2 | sort | uniq -c | sort -nr
+else
+    cmd="egrep -r --include=\*.php -h '$1' $2 | sort"
+    echo $cmd
+    egrep -r --include=\*.php $1 $2
+fi
