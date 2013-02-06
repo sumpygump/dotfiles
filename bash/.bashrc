@@ -5,13 +5,11 @@
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
 
-# set PATH so it includes user's private bin if it exists
-if [ -d ~/bin ] ; then
-    PATH=~/bin:"${PATH}"
-fi
-
 # Add current dir to path
-export PATH=./:$PATH
+case ":$PATH:" in
+    *":./:"*) :;;
+    *) PATH="./:$PATH";;
+esac
 
 # the default umask is set in /etc/profile
 umask 002
@@ -106,3 +104,13 @@ fi
 if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
     . /etc/bash_completion
 fi
+
+mp3towav(){
+    [[ $# -eq 0 ]] && { echo "mp3wav mp3file"; exit 1; }
+    for i in "$@"
+    do
+        # create .wav file name
+        local out="${i%/*}.wav"
+        [[ -f "$i" ]] && { echo -n "Processing ${i}..."; mpg123 -w "${out}" "$i" &>/dev/null  && echo "done." || echo "failed."; }
+    done
+}
