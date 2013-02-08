@@ -57,6 +57,7 @@ symlink_with_checks ".bash_profile" "$INSTALL_TO/dotfiles/bash/.bash_profile"
 symlink_with_checks ".bashrc" "$INSTALL_TO/dotfiles/bash/.bashrc"
 symlink_with_checks ".bash_aliases" "$INSTALL_TO/dotfiles/bash/.bash_aliases"
 symlink_with_checks ".gitconfig" "$INSTALL_TO/dotfiles/git/.gitconfig"
+symlink_with_checks ".tmux.conf" "$INSTALL_TO/dotfiles/tmux/.tmux.conf"
 
 echo "You should also do the following."
 echo "$ mkdir ~/.fonts"
