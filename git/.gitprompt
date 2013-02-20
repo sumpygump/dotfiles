@@ -1,0 +1,31 @@
+#!/usr/bin/bash
+function git_prompt_info() {
+    ref=$(git symbolic-ref HEAD 2> /dev/null) || return
+    printf "$(parse_git_dirty)$GIT_PROMPT_PREFIX${ref#refs/heads/}$GIT_PROMPT_SUFFIX"
+}
+
+function parse_git_dirty() {
+    if [[ -n $(git status -s 2> /dev/null) ]]; then
+        printf "$GIT_PROMPT_DIRTY+"
+    else
+        printf "$GIT_PROMPT_CLEAN"
+    fi
+}
+
+RESETCOLOR='\e[00m'
+FGBLACK='\e[0;30m'
+FGRED='\e[0;31m'
+FGGREEN='\e[0;32m'
+FGYELLOW='\e[0;33m'
+FGBLUE='\e[0;34m'
+FGMAGENTA='\e[0;35m'
+FGCYAN='\e[0;36m'
+FGWHITE='\e[0;37m'
+
+GIT_PROMPT_PREFIX="[git:"
+GIT_PROMPT_SUFFIX="]$RESETCOLOR"
+GIT_PROMPT_DIRTY=$FGRED
+GIT_PROMPT_CLEAN=$FGGREEN
+
+#PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\n\$ '
+PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\] $(git_prompt_info)\n\$ '
