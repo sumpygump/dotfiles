@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 function git_prompt_info() {
     ref=$(git symbolic-ref HEAD 2> /dev/null) || return
     printf "$(parse_git_dirty)$GIT_PROMPT_PREFIX${ref#refs/heads/}$GIT_PROMPT_SUFFIX"
