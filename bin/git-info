@@ -11,10 +11,10 @@ function main() {
     pushd . >/dev/null
 
     # Find base of git directory
-    while [ ! -d .git ] && [ ! `pwd` = "/" ]; do cd ..; done
+    gitdir=$(git rev-parse --git-dir 2>/dev/null)
 
     # Show various information about this git directory
-    if [ -d .git ]; then
+    if [ -d "$gitdir" ]; then
         echo "== Remote URL: (git remote -v)"
         git remote -v
         echo
@@ -28,11 +28,11 @@ function main() {
         echo
 
         echo "== Configuration (.git/config)"
-        cat .git/config
+        cat "$gitdir/config"
         echo
 
         echo "== Most Recent Commit"
-        git --no-pager log --max-count=1
+        git log --graph --oneline --decorate -10
         echo
 
         echo "Type 'git log' for more commits, or 'git show' for full commit details."
@@ -43,4 +43,4 @@ function main() {
     popd >/dev/null
 }
 
-main | less -F
+main | less -FX
