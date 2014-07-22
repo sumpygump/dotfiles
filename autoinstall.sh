@@ -20,7 +20,7 @@ if [ -e "$INSTALL_TO/dotfiles" ]; then
     fi
 else
     cd "$INSTALL_TO"
-    git clone git://github.com/sumpygump/dotfiles.git
+    git clone https://github.com/sumpygump/dotfiles.git
 fi
 
 symlink_with_checks() {
