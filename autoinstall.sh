@@ -53,7 +53,7 @@ symlink_with_checks() {
 }
 
 symlink_with_checks ".screenrc" "$INSTALL_TO/dotfiles/screen/.screenrc"
-symlink_with_checks ".bash_profile" "$INSTALL_TO/dotfiles/bash/.bash_profile"
+symlink_with_checks ".profile" "$INSTALL_TO/dotfiles/bash/.profile"
 symlink_with_checks ".bashrc" "$INSTALL_TO/dotfiles/bash/.bashrc"
 symlink_with_checks ".bash_aliases" "$INSTALL_TO/dotfiles/bash/.bash_aliases"
 symlink_with_checks ".gitconfig" "$INSTALL_TO/dotfiles/git/.gitconfig"
