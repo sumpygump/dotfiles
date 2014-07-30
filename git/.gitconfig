@@ -15,7 +15,7 @@
     lola = log --graph --decorate --pretty=oneline --abbrev-commit --all
     ls = ls-files
     timeline = log --oneline --graph --decorate
-    lof = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --
+    lof = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
 [push]
 	default = matching
 [credential]
