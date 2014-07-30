@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# Exit on first error
+set -e
+
+INCLUDE_DATA=false
+INCLUDE_SCHEMA=false
+
+sversion="dbbackup v0.5"
+
+displayUsage() {
+    echo "$sversion - Create backup of database for project"
+    echo "Usage: dbbackup [-d] [-s] [--help] [<file-infix>]"
+    echo "  --help       Display this help message"
+    echo "  -d           Include data"
+    echo "  -s           Include schema"
+    echo "  <file-infix> Infix string to put into filename"
+    echo
+    echo "dbbackup will attempt to read a file .dbconf to retrieve the database"
+    echo "connection credentials."
+    echo
+    echo "This will create a backup SQL file of the configured database"
+    echo "The filename will be of the pattern backup-<file-infix>-<current-date-time>.sql"
+    echo
+}
+
+# Handle --help arg
+if [ -n "$1" -a "$1" == "--help" ]; then
+    displayUsage
+    exit 1
+fi
+
+# Read DB credentials from .dbconf (if exists)
+DBCONF="`pwd`/.dbconf"
+
+if [ -e $DBCONF ]; then
+    echo "Loading DB connection credentials from $DBCONF"
+    source $DBCONF
+else
+    echo "No DB credentials file found. Create a file named .dbconf in the
+current directory with the following, including values for the following
+parameters:" 1>&2
+    echo 1>&2
+    echo "DBUSER=" 1>&2
+    echo "DBPASS=" 1>&2
+    echo "DBNAME=" 1>&2
+    exit 1
+fi
+
+# Process options
+while getopts "ds" opt; do
+    case $opt in
+        d)
+            INCLUDE_DATA=true
+            ;;
+        s)
+            INCLUDE_SCHEMA=true
+            ;;
+    esac
+done
+
+# Shift off the used args
+shift $((OPTIND-1))
+
+# Handle file-infix argument
+if [ -z "$1" ]; then
+    INFIX=""
+else
+    INFIX="$1-"
+fi
+
+# Generate correct filename based on infix and datetime
+datetime=`date "+%Y%m%d-%H%M%S"`
+outfilename="backup-$INFIX$datetime.sql"
+
+# Do the work
+if [ $INCLUDE_DATA == true -a $INCLUDE_SCHEMA == true ] ; then
+    # Table schema + data
+    echo "Writing table schema AND data to $outfilename ..."
+    mysqldump --extended-insert=TRUE --complete-insert=TRUE -u$DBUSER -p$DBPASS $DBNAME | sed 's$),($),\n($g'> "$outfilename"
+else
+    if [ $INCLUDE_SCHEMA == true ] ; then
+        # Just the table schema
+        echo "Writing just table schema to $outfilename ..."
+        mysqldump --no-data --extended-insert=TRUE -u$DBUSER -p$DBPASS $DBNAME | sed 's$),($),\n($g' | sed 's/ AUTO_INCREMENT=[0-9]*\b//' > "$outfilename"
+    else
+        # Just the data
+        echo "Writing just data to $outfilename ..."
+        mysqldump --no-create-info --extended-insert=TRUE --complete-insert=TRUE -u$DBUSER -p$DBPASS $DBNAME | sed 's$),($),\n($g'> "$outfilename"
+    fi
+fi
+
+echo "done."
