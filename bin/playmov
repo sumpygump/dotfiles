@@ -19,9 +19,11 @@ HASDIALOG=false
 
 SCRIPT=$(readlink -f $0)
 SCRIPTPATH=`dirname $SCRIPT`
+SEARCH=""
 
 displayUsage() {
     echo "$version - Play movies selecting from a list"
+    echo "playmov [search|file] - will only show movie files that match a search param"
     echo
 }
 
@@ -54,47 +56,55 @@ if [ $? -eq 1 ]; then
 fi
 
 hasSelectedMovie=0
-echo ${MOVIES[@]}
 
 # Process arg
-if [ -z $1 ]; then
-    if [ $HASDIALOG == true ]; then
-        while [ $hasSelectedMovie == 0 ]
-        do
-            MOVIES=(`ls -d {*/,*.{mp4,mkv,avi}} 2>/dev/null | awk '{printf "%s %10s ", $1, $1}'`)
-
-            value=$(dialog --clear --title "Movies" --menu "Select movie" 0 0 0 .. .. "${MOVIES[@]}" 2>&1 >/dev/tty)
-            retval=$?
-            case $retval in
-                0)
-                    clear;
-                    movie=$value
-                ;;
-                1)
-                    #User chose "Cancel"
-                    clear
-                    exit 0
-                ;;
-                255)
-                    clear
-                    exit 255
-                ;;
-            esac
-
-            # If user selected a directory, move into that directory
-            if [ -d $movie ]; then
-                cd $movie
-            else
-                #hasSelectedMovie=1
-                mplayerCmd="$MPLAYER -nolirc -fs $movie"
-                $mplayerCmd
-            fi
-        done
-    else
-        red;echo 'No argument.';op
-        displayUsage
-    fi
-else
-    movie=$1
+if [ -n "$1" ]; then
+    SEARCH="$1"
 fi
 
+# Handle if arg was an exact filename or a directory
+if [ -f "$SEARCH" ]; then
+    # File means play the file
+    movie=$SEARCH
+    mplayerCmd="$MPLAYER -nolirc -fs $movie"
+    $mplayerCmd
+    exit 0
+elif [ -d "$SEARCH" ]; then
+    # Directory means go into it
+    # Then reset the search because the search param is actually the dir
+    cd "$SEARCH"
+    SEARCH=""
+fi
+
+while [ $hasSelectedMovie == 0 ]
+do
+    MOVIES=(`ls -d {*/,*${SEARCH}*.{mp4,mkv,avi}} 2>/dev/null | awk '{printf "%s %10s ", $1, $1}'`)
+
+    value=$(dialog --clear --title "Movies" --menu "Select movie" 0 0 0 .. .. "${MOVIES[@]}" 2>&1 >/dev/tty)
+    retval=$?
+    case $retval in
+        0)
+            clear;
+            movie=$value
+        ;;
+        1)
+            #User chose "Cancel"
+            clear
+            exit 0
+        ;;
+        255)
+            clear
+            exit 255
+        ;;
+    esac
+
+    # If user selected a directory, move into that directory
+    if [ -d $movie ]; then
+        cd $movie
+    else
+        # With this commented out it returns to the listing after watching the video
+        #hasSelectedMovie=1
+        mplayerCmd="$MPLAYER -nolirc -fs $movie"
+        $mplayerCmd
+    fi
+done
