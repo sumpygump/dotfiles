@@ -22,9 +22,9 @@ function ii()
     echo -e "\nSystem information:$NC " ; uname -a
     echo -e "\n${RED}Machine stats :$NC " ; uptime
     echo -e "\n${RED}Storage stats :$NC " ; df -h | grep -v /var/run | grep -v /var/lock | grep -v ureadahead | grep -v /dev/shm
-    echo -e "\n${RED}Memory stats :$NC " ; free -m
-    echo -en "\n${RED}Local IP Address :$NC" ; ifconfig | grep 'inet addr:' | grep -v '127.0.0.1' | cut -d: -f2 | awk '{ printf "%s",$1}'
-    echo -en "\n${RED}ISP Address :$NC" ; wget http://automation.whatismyip.com/n09230945.asp -O - -q
+    #echo -e "\n${RED}Memory stats :$NC " ; free -m
+    echo -en "\n${RED}Local IP Address :$NC " ; ifconfig | grep 'inet ' | grep -v '127.0.0.1' | cut -d: -f2 | awk '{ printf "%s",$2}'
+    echo -en "\n${RED}ISP Address :$NC " ; wget http://quantalideas.com/service/ipaddress.php?ip -O - -q
     echo ""
 }
 
@@ -38,5 +38,5 @@ alias la='ls -A'
 alias l='ls -CF'
 
 # Additional aliases
-alias ack='ack-grep'
+#alias ack='ack-grep'
 alias ltr='ls -ltr'

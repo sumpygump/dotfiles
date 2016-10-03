@@ -1,21 +1,37 @@
 [user]
-    name = Jansen Price
-    email = sumpygump@gmail.com
+	name = Jansen Price
+	email = sumpygump@gmail.com
 [color]
     ui = auto
 [alias]
+    # Shortcuts
     st = status -sb
     ci = commit
-    br = branch
-    co = checkout
-    df = diff
-    dc = diff --cached
-    lg = log -p
-    lol = log --graph --decorate --pretty=oneline --abbrev-commit
-    lola = log --graph --decorate --pretty=oneline --abbrev-commit --all
     ls = ls-files
-    timeline = log --oneline --graph --decorate
-    lof = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+    # Human commands
+    #branches = branch -a
+    tags = tag
+    stashes = stash list
+    stage = add
+    unstage = reset -q HEAD --
+    discard = checkout --
+    uncommit = reset --mixed HEAD~
+    amend = commit --amend
+    # Check that everything is ready to commit
+    precommit = diff --cached --diff-algorithm=minimal -w
+    # Log commands
+    timeline = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+    graph = log --graph -10 --branches --remotes --tags  --format=format:'%Cgreen%h %Creset• %<(75,trunc)%s (%cN, %cr) %Cred%d' --date-order
+    # Show a list of aliases
+    alias = config --get-regexp alias
+[core]
+	excludesfile = ~/.gitignore
+[difftool "sourcetree"]
+	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+	path = 
+[mergetool "sourcetree"]
+	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+	trustExitCode = true
 [push]
 	default = matching
 [credential]
