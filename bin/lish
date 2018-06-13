@@ -1,2 +1,2 @@
 #!/bin/bash
-ls -l $1 ~/bin/ | less
+ls -l $1 ~/bin/ | less -FX
