@@ -82,7 +82,6 @@ outfilename="backup-$INFIX$datetime.sql"
 if [ $INCLUDE_DATA == true -a $INCLUDE_SCHEMA == true ] ; then
     # Table schema + data
     echo "Writing table schema AND data to $outfilename ..."
-    echo -P$DBPORT -u$DBUSER -p$DBPASS $DBNAME
     mysqldump --extended-insert=TRUE --complete-insert=TRUE -P$DBPORT -u$DBUSER -p$DBPASS $DBNAME 2>&1 \
     | grep -v "Using a password" \
     | sed $'s$ VALUES $\\\nVALUES\\\n$g' \
