@@ -6,7 +6,7 @@ set -e
 INCLUDE_DATA=false
 INCLUDE_SCHEMA=false
 
-sversion="dbbackup v0.5"
+sversion="dbbackup v0.5.2"
 
 displayUsage() {
     echo "$sversion - Create backup of database for project"
@@ -32,6 +32,10 @@ fi
 
 # Read DB credentials from .dbconf (if exists)
 DBCONF="`pwd`/.dbconf"
+DBPORT=3306
+
+echo $sversion
+echo
 
 if [ -e $DBCONF ]; then
     echo "Loading DB connection credentials from $DBCONF"
@@ -44,6 +48,7 @@ parameters:" 1>&2
     echo "DBUSER=" 1>&2
     echo "DBPASS=" 1>&2
     echo "DBNAME=" 1>&2
+    echo "DBPORT=3306" 1>&2
     exit 1
 fi
 
@@ -77,16 +82,26 @@ outfilename="backup-$INFIX$datetime.sql"
 if [ $INCLUDE_DATA == true -a $INCLUDE_SCHEMA == true ] ; then
     # Table schema + data
     echo "Writing table schema AND data to $outfilename ..."
-    mysqldump --extended-insert=TRUE --complete-insert=TRUE -u$DBUSER -p$DBPASS $DBNAME | sed 's$),($),\n($g'> "$outfilename"
+    echo -P$DBPORT -u$DBUSER -p$DBPASS $DBNAME
+    mysqldump --extended-insert=TRUE --complete-insert=TRUE -P$DBPORT -u$DBUSER -p$DBPASS $DBNAME 2>&1 \
+    | grep -v "Using a password" \
+    | sed $'s$ VALUES $\\\nVALUES\\\n$g' \
+    | sed $'s$),($),\\\n($g' > "$outfilename"
 else
     if [ $INCLUDE_SCHEMA == true ] ; then
         # Just the table schema
         echo "Writing just table schema to $outfilename ..."
-        mysqldump --no-data --extended-insert=TRUE -u$DBUSER -p$DBPASS $DBNAME | sed 's$),($),\n($g' | sed 's/ AUTO_INCREMENT=[0-9]*\b//' > "$outfilename"
+        mysqldump --no-data --extended-insert=TRUE -P$DBPORT -u$DBUSER -p$DBPASS $DBNAME 2>&1 \
+        | grep -v "Using a password" \
+        | sed $'s$),($),\\\n($g' \
+        | sed 's/ AUTO_INCREMENT=[0-9]*\b//' > "$outfilename"
     else
         # Just the data
         echo "Writing just data to $outfilename ..."
-        mysqldump --no-create-info --extended-insert=TRUE --complete-insert=TRUE -u$DBUSER -p$DBPASS $DBNAME | sed 's$),($),\n($g'> "$outfilename"
+        mysqldump --no-create-info --extended-insert=TRUE --complete-insert=TRUE -P$DBPORT -u$DBUSER -p$DBPASS $DBNAME 2>&1 \
+        | grep -v "Using a password" \
+        | sed $'s$ VALUES $\\\nVALUES\\\n$g' \
+        | sed $'s$),($),\\\n($g' > "$outfilename"
     fi
 fi
 
