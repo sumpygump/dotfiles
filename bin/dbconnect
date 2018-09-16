@@ -46,4 +46,4 @@ parameters:" 1>&2
     exit 1
 fi
 
-mysql -P$DBPORT -u$DBUSER -p$DBPASS $DBNAME
+MYSQL_PWD=$DBPASS mysql -P$DBPORT -u$DBUSER $DBNAME
