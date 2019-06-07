@@ -1,0 +1,125 @@
+#!/bin/bash
+
+CATCMD="cat"
+ROOT=`git rev-parse --show-toplevel`
+GLOBALIGNOREFILE=~/.gitignore
+IGNOREFILE=".gitignore"
+REPOIGNOREFILE="$ROOT/$IGNOREFILE"
+TARGETIGNOREFILE=$IGNOREFILE
+
+TARGETED_CONTEXT="Current directory"
+SHOULD_TARGET_ROOT=false
+SHOULD_TARGET_GLOBAL=false
+SHOULD_TARGET_CURRENT=false
+IS_TARGETED=false
+
+red() { [ -t 0 ] && printf "\E[31m"; }
+green() { [ -t 0 ] && printf "\E[32m"; }
+op() { [ -t 0 ] && printf "\E[39;49m"; }
+
+showIgnoreFile() {
+    if [ -e "$1" ]; then
+        green;echo "## $2 ignore entries ($1)";op
+        $CATCMD "$1"
+        echo
+    fi
+}
+
+displayUsage() {
+    echo "git ignore - Manage ignored files"
+    echo "Usage: git ignore [-r|-g] [filemask]"
+    echo "  -r Use repository root for adding entries"
+    echo "  -g Use global (~/.gitignore) for adding entries"
+    echo
+    echo "This will add the entry filemask to the ignore file ($IGNOREFILE)."
+    echo "With no arguments it will display the listing of ignored files."
+    echo
+    echo "Example: git ignore vendor"
+    echo
+}
+
+# Handle --help arg
+if [ -n "$1" -a "$1" == "--help" ]; then
+    displayUsage
+    exit 1
+fi
+
+# Process options
+while getopts "cgr" opt; do
+    case $opt in
+        c)
+            SHOULD_TARGET_CURRENT=true
+            ;;
+        r)
+            SHOULD_TARGET_ROOT=true
+            ;;
+        g)
+            SHOULD_TARGET_GLOBAL=true
+            ;;
+    esac
+done
+
+# Shift off the used args
+shift $((OPTIND-1))
+
+# Whether should traverse to repo root as target file
+if [ $SHOULD_TARGET_ROOT == true ] ; then
+    TARGETED_CONTEXT="Repository root"
+    TARGETIGNOREFILE=$REPOIGNOREFILE
+    IS_TARGETED=true
+fi
+
+# Whether the global file should be the target file
+if [ $SHOULD_TARGET_GLOBAL == true ]; then
+    TARGETED_CONTEXT="Global"
+    TARGETIGNOREFILE=$GLOBALIGNOREFILE
+    IS_TARGETED=true
+fi
+
+# Whether the current dir should be the target file
+if [ $SHOULD_TARGET_CURRENT == true ]; then
+    TARGETIGNOREFILE=$IGNOREFILE
+    IS_TARGETED=true
+fi
+
+if [ -z "$1" ]; then
+    # If no arguments, display ignore entries
+
+    if [ $IS_TARGETED == true ]; then
+        # Only show the targeted file
+        showIgnoreFile "$TARGETIGNOREFILE" "$TARGETED_CONTEXT"
+    else
+        # Global ignore file
+        showIgnoreFile "$GLOBALIGNOREFILE" "Global"
+        
+        if [ "$ROOT" != "`pwd`" ]; then
+            # User is not in repository root right now
+            # Show repo level ignore file AND current dir ignore file
+            showIgnoreFile "$REPOIGNOREFILE" "Repository"
+            showIgnoreFile "$IGNOREFILE" "Current directory"
+        else
+            # Just show repo level ignore file
+            showIgnoreFile "$IGNOREFILE" "Repository"
+        fi
+    fi
+else
+    ## Add a entry to the target ignore file
+
+    # Check existence of ignore file
+    if [ ! -e "$TARGETIGNOREFILE" ]; then
+        red;echo Creating ignore file at "$TARGETIGNOREFILE";op
+        touch "$TARGETIGNOREFILE"
+        echo
+    fi
+
+    # Determine whether desired entry already exists in target file
+    cat "$TARGETIGNOREFILE" | grep "$1" > /dev/null
+    if [ $? -eq 0 ]; then
+        red;echo "Entry '$1' already exists in '$TARGETIGNOREFILE'";op
+    else
+        green;echo "## Ignoring '$1' in $TARGETED_CONTEXT ignore file '$TARGETIGNOREFILE'";op
+        echo "$1" >> "$TARGETIGNOREFILE"
+    fi
+fi
+
+exit 0
