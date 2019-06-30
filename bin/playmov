@@ -76,9 +76,13 @@ elif [ -d "$SEARCH" ]; then
     SEARCH=""
 fi
 
+shopt -s nullglob
 while [ $hasSelectedMovie == 0 ]
 do
-    MOVIES=(`ls -d {*/,*${SEARCH}*.{mp4,mkv,avi}} 2>/dev/null | awk '{printf "%s %10s ", $1, $1}'`)
+    MOVIES=()
+    for f in {*/,*${SEARCH}*.{mp4,mkv,avi}}; do
+        MOVIES+=( "$f" "$f" )
+    done
 
     value=$(dialog --clear --title "Movies" --menu "Select movie" 0 0 0 .. .. "${MOVIES[@]}" 2>&1 >/dev/tty)
     retval=$?
@@ -99,12 +103,11 @@ do
     esac
 
     # If user selected a directory, move into that directory
-    if [ -d $movie ]; then
+    if [ -d "$movie" ]; then
         cd $movie
     else
         # With this commented out it returns to the listing after watching the video
         #hasSelectedMovie=1
-        mplayerCmd="$MPLAYER -nolirc -fs $movie"
-        $mplayerCmd
+        $MPLAYER -nolirc -fs "$movie"
     fi
 done
