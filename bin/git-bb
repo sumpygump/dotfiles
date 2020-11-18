@@ -4,4 +4,4 @@ git for-each-ref --sort=-committerdate refs/heads/ refs/remotes \
   --format='%(refname:short)|%(committerdate:short)|%(authorname)|%(subject)' \
   | sed 's/refs\/heads\///g' \
   | grep -v BACKUP \
-  | while IFS='|' read branch date author subject; do printf '%-10s %-30s %-20s %s\n' "$date" "$branch" "$author" "$subject"; done
+  | while IFS='|' read branch date author subject; do printf '%-10s %-40s %s\n' "$date" "$branch" "$author"; done

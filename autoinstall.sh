@@ -48,7 +48,7 @@ symlink_with_checks() {
             fi
         fi
     else
-        ln -v -s "$sourcepath"
+        ln -v -s "$sourcepath" "$targetname"
     fi
 }
 
