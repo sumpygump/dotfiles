@@ -3,7 +3,7 @@
 # Exit on first error
 set -e
 
-sversion="dbconnect v0.5.2"
+sversion="dbconnect v0.5.3"
 
 # DB credentials file
 DBCONF="`pwd`/.dbconf"

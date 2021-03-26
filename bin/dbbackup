@@ -6,12 +6,13 @@ set -e
 INCLUDE_DATA=false
 INCLUDE_SCHEMA=false
 
-sversion="dbbackup v0.5.2"
+sversion="dbbackup v0.5.3"
 
 displayUsage() {
     echo "$sversion - Create backup of database for project"
     echo "Usage: dbbackup [-d] [-s] [--help] [<file-infix>]"
     echo "  --help       Display this help message"
+    echo "  --init       Create default .dbconf file"
     echo "  -d           Include data"
     echo "  -s           Include schema"
     echo "  <file-infix> Infix string to put into filename"
@@ -34,6 +35,23 @@ fi
 DBCONF="`pwd`/.dbconf"
 DBPORT=3306
 
+# Handle --init arg
+# This will just create the .dbconf file for ease of use
+if [ -n "$1" -a "$1" == "--init" ]; then
+    if [ -e $DBCONF ]; then
+        echo "Config file already exists."
+        exit 1
+    fi
+
+    echo "DBUSER=" >> $DBCONF
+    echo "DBPASS=" >> $DBCONF
+    echo "DBNAME=" >> $DBCONF
+    echo "DBPORT=3306" >> $DBCONF
+    echo "Default config file written at $DBCONF"
+    exit 0
+fi
+
+
 echo $sversion
 echo
 
@@ -49,6 +67,8 @@ parameters:" 1>&2
     echo "DBPASS=" 1>&2
     echo "DBNAME=" 1>&2
     echo "DBPORT=3306" 1>&2
+    echo 1>&2
+    echo "Or run \`dbbackup --init\` to create the file for you" 1>&2
     exit 1
 fi
 
