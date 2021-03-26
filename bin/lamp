@@ -1,0 +1,163 @@
+#!/bin/bash
+
+: ${DIALOG=dialog}
+
+LOGO="
+▄                                     ▄   ▄
+█    ▄▄▄  ▄▄ ▄   ▄▄   ▄▄▄ ▄▄▄  ▄▄▄   █ ▀ ▄█▄
+█     ▄▄█ █ █ █ █  █ █    █  ▀  ▄▄█ ▀█▀   █
+█▄▄▄ ▀▄▄█ █ █ █ █▄▄▀ ▀▄▄▄ █    ▀▄▄█  █    ▀▄▀
+                █
+"
+
+PHP_OPTS=("latest-1404-php5" "5.3" "latest-1604-php5" "5.4" "latest-1404" "7.3.3" "latest-1604" "7.4.8" "latest-1804" "7.4.8")
+EXISTING_CONTAINERS=`docker ps -a --format=' - {{.Names}}'|sort`
+EXISTING_PORTS=`docker ps -a --format=' - {{.Names}}\t {{.Ports}}'|sort|sed 's#0.0.0.0:##g'|sed 's#/tcp##g'`
+
+red() {
+    if [ -t 0 ]; then
+        printf "\E[31m"
+    fi
+}
+op() {
+    if [ -t 0 ]; then
+        printf "\E[39;49m"
+    fi
+}
+
+# Detect if dialog is available
+which $DIALOG > /dev/null
+if [ $? -eq 1 ]; then
+    red; echo "Error: $DIALOG not installed."; op
+    exit 1
+fi
+
+# Intro screen
+$(dialog --backtitle "Lampcraft" --title "Welcome" --cr-wrap --msgbox "${LOGO}\nLet's make a LAMP docker container..." 16 70 2>&1 >/dev/tty)
+
+# Step 1: Name of docker container
+CONTAINER_NAME=$(dialog --clear --backtitle "Lampcraft" --title "Step 1 of 5: Name" --cr-wrap --inputbox "Here are the current container names:\n$EXISTING_CONTAINERS\n\nWhat should be the name of your container (no spaces)" 0 0 "lamp1" 2>&1 >/dev/tty)
+retval=$?
+if [ $retval -eq 1 ]; then
+    # User chose cancel
+    clear
+    exit 0
+fi
+
+# Step 2: Select PHP version
+# Prompt user to select which PHP version they want to use, so we can know
+# which docker image to use
+value=$(dialog --clear --backtitle "Lampcraft" --title "Step 2 of 5: PHP version" --menu "Select PHP version" 0 0 8 "${PHP_OPTS[@]}" 2>&1 >/dev/tty)
+retval=$?
+case $retval in
+    0)
+        clear;
+        selected_option=$value
+    ;;
+    1)
+        #User chose "Cancel"
+        clear
+        exit 0
+    ;;
+    255)
+        clear
+        exit 255
+    ;;
+esac
+
+DOCKER_IMAGE="mattrayner/lamp:$selected_option"
+
+EXISTING_PORTS_MESSAGE="Current port mappings:\n[name  host->guest]\n$EXISTING_PORTS\n"
+
+# Step 3 Set up apache port mapping
+APACHE_PORT=$(dialog --clear --backtitle "Lampcraft" --title "Step 3 of 5: Apache port" --cr-wrap --inputbox "$EXISTING_PORTS_MESSAGE\nApache port 80 on the guest should map to host port ..." 0 0 "8080" 2>&1 >/dev/tty)
+retval=$?
+if [ $retval -eq 1 ]; then
+    # User chose cancel
+    clear
+    exit 0
+fi
+
+# Step 4 Set Mysql port mapping
+MYSQL_PORT=$(dialog --clear --backtitle "Lampcraft" --title "Step 4 of 5: MySQL port" --cr-wrap --inputbox "$EXISTING_PORTS_MESSAGE\nMysql port 3306 on the guest should map to host port ..." 0 0 "3308" 2>&1 >/dev/tty)
+retval=$?
+if [ $retval -eq 1 ]; then
+    # User chose cancel
+    clear
+    exit 0
+fi
+
+# Step 5 Set Mailhog port mapping
+MAILHOG_PORT=$(dialog --clear --backtitle "Lampcraft" --title "Step 5 of 5: Mailhog port" --inputbox "$EXISTING_PORTS_MESSAGE\nMailhog port of 8025 on the guest should map to host port ..." 0 0 "8025" 2>&1 >/dev/tty)
+retval=$?
+if [ $retval -eq 1 ]; then
+    # User chose cancel
+    clear
+    exit 0
+fi
+
+clear
+echo "%% Lampcraft %%"
+echo "==============="
+echo
+echo "Your selections:"
+echo " * Name: $CONTAINER_NAME"
+echo " * Docker image (PHP version): $DOCKER_IMAGE"
+echo " * Apache port: $APACHE_PORT"
+echo " * MySQL port: $MYSQL_PORT"
+echo " * Mailhog port: $MAILHOG_PORT"
+
+LOCATION="$PWD/$CONTAINER_NAME"
+
+echo
+echo "The files (on host) will be in directory $LOCATION"
+
+if [ -d "$LOCATION" ]; then
+    red && echo "Directory $LOCATION already exists. Are you sure?" && op
+fi
+
+# Final prompt
+read -p "Shall I provision it? (Y/n): " answer
+if [ "$answer" != "" ] && [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+    echo "Aborting."
+    exit 0
+fi
+
+# Set up the container's directory for the app & mysql
+mkdir -p $LOCATION
+mkdir -p $LOCATION/mysql
+
+echo "#!/bin/bash" >> $LOCATION/dbash
+echo "NAME=$CONTAINER_NAME" >> $LOCATION/dbash
+echo "docker exec -i -t \$NAME bash" >> $LOCATION/dbash
+chmod a+x $LOCATION/dbash
+
+# Some notes
+echo "+----------------------------------------------------------------------------------------------+"
+echo "                                  [ Some notes to review ]"
+echo
+echo "  If all goes well in the next step, the docker container will be created and start running."
+echo "  You should quit it with Ctrl-c and then stop it if you need to symlink your web app in $LOCATION/app"
+echo "  You can check if it is running by executing 'docker ps -a'"
+echo "  And you can start and stop it by running 'docker start $CONTAINER_NAME' or 'docker stop $CONTAINER_NAME'"
+echo "  You can use the script 'dbash' to connect to the bash terminal of the image"
+echo
+echo "  Enjoy!"
+echo "+----------------------------------------------------------------------------------------------+"
+echo
+
+# Run the docker command to create the container
+echo docker run --name $CONTAINER_NAME -t -p "$MAILHOG_PORT:8025" -p "$APACHE_PORT:80" -p "$MYSQL_PORT:3306" -v $LOCATION/app:/app -v $LOCATION/mysql:/var/lib/mysql $DOCKER_IMAGE
+echo
+docker run --name $CONTAINER_NAME -t -p "$MAILHOG_PORT:8025" -p "$APACHE_PORT:80" -p "$MYSQL_PORT:3306" -v $LOCATION/app:/app -v $LOCATION/mysql:/var/lib/mysql $DOCKER_IMAGE
+result=$?
+
+if [ $result -ne 0 ]; then
+    red; echo "Oh, there was a problem provisioning the container. See above"
+    exit 1
+fi
+
+# This is the version to not map the mysql directory to the host
+#docker run --name $CONTAINER_NAME -t -p 8025:8025 -p "$APACHE_PORT:80" -p "$MYSQL_PORT:3306" -v $LOCATION/app:/app $DOCKER_IMAGE
+
+exit 0
