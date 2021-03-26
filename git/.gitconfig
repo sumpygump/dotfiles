@@ -5,7 +5,7 @@
     ui = auto
 [alias]
     # Shortcuts
-    st = status -sb
+    st = !git status -sb && git describe --tags
     ci = commit
     ls = ls-files
     # Human commands
@@ -21,11 +21,12 @@
     precommit = diff --cached --diff-algorithm=minimal -w
     # Log commands
     timeline = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+    timeline-nc = log --graph --pretty=format:'%h -%d %s (%cr) <%an>' --abbrev-commit
     graph = log --graph -10 --branches --remotes --tags  --format=format:'%Cgreen%h %Creset• %<(75,trunc)%s (%cN, %cr) %Cred%d' --date-order
     # Show a list of aliases
     alias = config --get-regexp alias
 [core]
-	excludesfile = ~/.gitignore
+	excludesfile = ~/.gitignore_global
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 	path = 
@@ -36,3 +37,9 @@
 	default = matching
 [credential]
 	helper = cache
+[http]
+	cookiefile = ~/.gitcookies
+[pull]
+	rebase = true
+[init]
+	defaultBranch = master
