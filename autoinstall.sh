@@ -15,7 +15,7 @@ die() {
 if [ -e "$INSTALL_TO/dotfiles" ]; then
     echo -n "$INSTALL_TO/dotfiles already exists. Do you want to continue with symlinking files? (Y/n) "
     read answer
-    if [ "$answer" == "n" ]; then
+    if [ "$answer" = "n" ]; then
         die "Exiting."
     fi
 else
@@ -37,11 +37,11 @@ symlink_with_checks() {
         else
             echo -n "The files are not the same. Wanna see a diff? (y/N) "
             read answer
-            if [ "$answer" == "y" ]; then
+            if [ "$answer" = "y" ]; then
                 diff -u "$sourcepath" $targetname | less
                 echo -n "Wanna delete this file and then use the symlink? (y/N) "
                 read answer
-                if [ "$answer" == "y" ]; then
+                if [ "$answer" = "y" ]; then
                     rm $targetname
                     ln -v -s "$sourcepath"
                 fi
