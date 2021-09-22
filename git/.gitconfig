@@ -1,6 +1,6 @@
 [user]
-	name = Jansen Price
-	email = sumpygump@gmail.com
+    name = Jansen Price
+    email = sumpygump@gmail.com
 [color]
     ui = auto
 [alias]
@@ -21,25 +21,29 @@
     precommit = diff --cached --diff-algorithm=minimal -w
     # Log commands
     timeline = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
-    timeline-nc = log --graph --pretty=format:'%h -%d %s (%cr) <%an>' --abbrev-commit
-    graph = log --graph -10 --branches --remotes --tags  --format=format:'%Cgreen%h %Creset• %<(75,trunc)%s (%cN, %cr) %Cred%d' --date-order
+    graph = log --graph --branches --remotes --tags  --format=format:'%Cgreen%h %Creset• %<(75,trunc)%s (%cN, %cr) %Cred%d' --date-order
     # Show a list of aliases
     alias = config --get-regexp alias
+    # Get info about this repo
+    info = "!f() { echo '== Remotes' && git remote -v; \
+        printf '\n== Branches\n' && git bb | head; \
+        printf '\n== You are here\n' && git timeline -3; \
+        }; f"
 [core]
-	excludesfile = ~/.gitignore_global
+    excludesfile = ~/.gitignore_global
 [difftool "sourcetree"]
-	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
-	path = 
+    cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+    path =
 [mergetool "sourcetree"]
-	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
-	trustExitCode = true
+    cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+    trustExitCode = true
 [push]
-	default = matching
+    default = matching
 [credential]
-	helper = cache
+    helper = cache
 [http]
-	cookiefile = ~/.gitcookies
+    cookiefile = ~/.gitcookies
 [pull]
-	rebase = true
+    rebase = true
 [init]
-	defaultBranch = master
+    defaultBranch = master
