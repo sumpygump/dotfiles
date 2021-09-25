@@ -1,7 +1,26 @@
 #/bin/bash
 
-git for-each-ref --sort=-committerdate refs/heads/ refs/remotes \
+LOCAL=0
+REMOTE=0
+PATHS="refs/heads refs/remotes"
+LABEL=""
+
+if [ "$1" == "--local" ]; then
+    LOCAL=1
+    LABEL="== Locals"
+    PATHS="refs/heads"
+elif [ "$1" == "--remote" ]; then
+    REMOTE=1
+    LABEL="== Remotes"
+    PATHS="refs/remotes"
+fi
+
+if [ ! -z "$LABEL" ]; then
+    echo $LABEL
+fi
+
+git for-each-ref --sort=-committerdate $PATHS \
   --format='%(refname:short)|%(committerdate:short)|%(authorname)|%(subject)' \
   | sed 's/refs\/heads\///g' \
   | grep -v BACKUP \
-  | while IFS='|' read branch date author subject; do printf '%-10s %-40s %s\n' "$date" "$branch" "$author"; done
+  | while IFS='|' read branch date author subject; do printf '%-10s %-50s %s\n' "$date" "$branch" "$author"; done
