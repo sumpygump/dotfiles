@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 LOCAL=0
 REMOTE=0
