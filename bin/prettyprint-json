@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+if [ -z $1 ]; then
+    echo usage: $0 filename
+    exit
+fi
+
+JSON_FILE=$1
+TMP_FILE="/tmp/jsonfile1"
+
+cp "$JSON_FILE" "$TMP_FILE"
+python3 -m json.tool < "$TMP_FILE" > "$JSON_FILE" 
