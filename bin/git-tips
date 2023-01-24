@@ -1,0 +1,69 @@
+#!/bin/bash
+
+setup_terminal() {
+    TPUT_RESET=""
+    TPUT_YELLOW=""
+    TPUT_BLUE=""
+
+    # Is stderr on the terminal? If not, then fail
+    test -t 2 || return 1
+
+    if command -v tput >/dev/null 2>&1; then
+        if [ $(($(tput colors 2>/dev/null))) -ge 8 ]; then
+            # Enable colors
+            TPUT_RESET="$(tput sgr 0)"
+            TPUT_YELLOW="$(tput setaf 3)"
+            TPUT_BLUE="$(tput setaf 4)"
+        fi
+    fi
+
+    return 0
+}
+info() {
+    printf "${TPUT_YELLOW}%s${TPUT_RESET}\n" "$*"
+}
+
+setup_terminal || echo >/dev/null
+
+printf "${TPUT_BLUE}%s${TPUT_RESET}\n"   "SOME GIT TIPS"
+printf "${TPUT_BLUE}%s${TPUT_RESET}\n\n" "============="
+
+echo ":: Create new branch and switch to it at the same time"
+info "> git checkout -b <branch-name>"
+info "> git switch -c <branch-name>"
+echo
+
+echo ":: Clean up remote branches"
+info "> git remote prune <remote>"
+echo "This will clean up remote tracking branches, meaning deleting references to
+non-existing remote branches, use the 'git remote prune' command and specify the remote
+name."
+echo
+
+echo ":: Delete a local branch"
+info "> git branch -d <branch-name>"
+echo
+
+echo ":: See the changes in a branch ignoring commits merged in"
+info "> git diff HEAD...<branch-name>"
+echo "This command can be used more generically between any to git refs, but the
+important thing to remember is the three dots"
+echo
+
+echo ":: See what is in a stash without applying it"
+info "> git stash show -p <stash-index>"
+echo "This will give you a diff patch of what is in the specified stash"
+echo
+
+echo ":: Switch to a branch from remote with different local branch name"
+info "> git checkout -b <branch-name-alt> <remote>/<branch-name>"
+echo "This is useful if you have multiple remotes but need to differentiate branches
+that are different between the remotes, but have the same name."
+echo
+
+echo ":: Merge a branch with 'theirs' strategy"
+info "> git merge -X theirs <branch-name>"
+echo "This will merge in the other branch into the current branch but use a strategy
+such that every time a conflict occurs it will default to use the changes from the
+new branch. Useful if you know that there were no changes made in the target branch."
+echo
