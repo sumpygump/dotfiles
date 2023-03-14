@@ -37,27 +37,6 @@ DBHOST=127.0.0.1
 
 # Read DB credentials from .dbconf (if exists)
 DBCONF="`pwd`/.dbconf"
-DBPORT=3306
-
-# Handle --init arg
-# This will just create the .dbconf file for ease of use
-if [ -n "$1" -a "$1" == "--init" ]; then
-    if [ -e $DBCONF ]; then
-        echo "Config file already exists."
-        exit 1
-    fi
-
-    echo "DBUSER=" >> $DBCONF
-    echo "DBPASS=" >> $DBCONF
-    echo "DBNAME=" >> $DBCONF
-    echo "DBPORT=3306" >> $DBCONF
-    echo "Default config file written at $DBCONF"
-    exit 0
-fi
-
-
-echo $sversion
-echo
 
 # Handle --init arg
 # This will just create the .dbconf file for ease of use
