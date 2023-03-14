@@ -6,22 +6,23 @@ set -e
 INCLUDE_DATA=false
 INCLUDE_SCHEMA=false
 
-sversion="dbbackup v0.5.3"
+sversion="dbbackup v0.6"
 
 displayUsage() {
     echo "$sversion - Create backup of database for project"
-    echo "Usage: dbbackup [-d] [-s] [--help] [<file-infix>]"
+    echo "Usage: dbbackup [-d] [-s] [-i <infix>] [--init] [--help] [table_name...] "
     echo "  --help       Display this help message"
     echo "  --init       Create default .dbconf file"
+    echo "  -i <infix>   Include an infix with supplied string in the output file"
     echo "  -d           Include data"
     echo "  -s           Include schema"
-    echo "  <file-infix> Infix string to put into filename"
+    echo " table_name... Generate backup for the given tables only"
     echo
     echo "dbbackup will attempt to read a file .dbconf to retrieve the database"
     echo "connection credentials."
     echo
     echo "This will create a backup SQL file of the configured database"
-    echo "The filename will be of the pattern backup-<file-infix>-<current-date-time>.sql"
+    echo "The filename will be of the pattern backup-<infix>-<current-date-time>.sql"
     echo
 }
 
@@ -30,6 +31,9 @@ if [ -n "$1" -a "$1" == "--help" ]; then
     displayUsage
     exit 1
 fi
+
+DBPORT=3306
+DBHOST=127.0.0.1
 
 # Read DB credentials from .dbconf (if exists)
 DBCONF="`pwd`/.dbconf"
@@ -55,6 +59,53 @@ fi
 echo $sversion
 echo
 
+# Handle --init arg
+# This will just create the .dbconf file for ease of use
+if [ -n "$1" -a "$1" == "--init" ]; then
+    if [ -e $DBCONF ]; then
+        echo "Config file already exists."
+        exit 1
+    fi
+
+    echo "DBUSER=" >> $DBCONF
+    echo "DBPASS=" >> $DBCONF
+    echo "DBNAME=" >> $DBCONF
+    echo "DBPORT=3306" >> $DBCONF
+    echo "Default config file written at $DBCONF"
+    exit 0
+fi
+
+# Process options
+while getopts ":di:s" opt; do
+    case $opt in
+        d)
+            INCLUDE_DATA=true
+            ;;
+        i)
+            INFIX=${OPTARG}
+            ;;
+        s)
+            INCLUDE_SCHEMA=true
+            ;;
+        *)
+            displayUsage
+            exit 1
+            ;;
+        \?)
+            displayUsage
+            echo "Invalid option -$OPTARG"
+            exit 1
+            ;;
+    esac
+done
+
+# Shift off the used args
+shift $((OPTIND-1))
+
+# Intro
+echo $sversion
+echo
+
 if [ -e $DBCONF ]; then
     echo "Loading DB connection credentials from $DBCONF"
     source $DBCONF
@@ -72,26 +123,17 @@ parameters:" 1>&2
     exit 1
 fi
 
-# Process options
-while getopts "ds" opt; do
-    case $opt in
-        d)
-            INCLUDE_DATA=true
-            ;;
-        s)
-            INCLUDE_SCHEMA=true
-            ;;
-    esac
-done
-
-# Shift off the used args
-shift $((OPTIND-1))
-
 # Handle file-infix argument
-if [ -z "$1" ]; then
+if [ -z "$INFIX" ]; then
     INFIX=""
 else
-    INFIX="$1-"
+    INFIX="$INFIX-"
+fi
+
+# Tables
+TABLES=""
+if [ "$#" -gt "0" ]; then
+    TABLES=$@
 fi
 
 # Generate correct filename based on infix and datetime
@@ -99,29 +141,29 @@ datetime=`date "+%Y%m%d-%H%M%S"`
 outfilename="backup-$INFIX$datetime.sql"
 
 # Do the work
+OPTIONS=( --extended-insert=TRUE --column-statistics=0 --set-gtid-purged=OFF )
 if [ $INCLUDE_DATA == true -a $INCLUDE_SCHEMA == true ] ; then
     # Table schema + data
     echo "Writing table schema AND data to $outfilename ..."
-    mysqldump --extended-insert=TRUE --complete-insert=TRUE -P$DBPORT -u$DBUSER -p$DBPASS $DBNAME 2>&1 \
-    | grep -v "Using a password" \
-    | sed $'s$ VALUES $\\\nVALUES\\\n$g' \
-    | sed $'s$),($),\\\n($g' > "$outfilename"
+    OPTIONS+=( --complete-insert=TRUE )
 else
     if [ $INCLUDE_SCHEMA == true ] ; then
         # Just the table schema
         echo "Writing just table schema to $outfilename ..."
-        mysqldump --no-data --extended-insert=TRUE -P$DBPORT -u$DBUSER -p$DBPASS $DBNAME 2>&1 \
-        | grep -v "Using a password" \
-        | sed $'s$),($),\\\n($g' \
-        | sed 's/ AUTO_INCREMENT=[0-9]*\b//' > "$outfilename"
+        OPTIONS+=( --no-data )
     else
         # Just the data
         echo "Writing just data to $outfilename ..."
-        mysqldump --no-create-info --extended-insert=TRUE --complete-insert=TRUE -P$DBPORT -u$DBUSER -p$DBPASS $DBNAME 2>&1 \
-        | grep -v "Using a password" \
-        | sed $'s$ VALUES $\\\nVALUES\\\n$g' \
-        | sed $'s$),($),\\\n($g' > "$outfilename"
+        OPTIONS+=( --no-create-info --complete-insert=TRUE )
     fi
 fi
+
+MYSQL_PWD=$DBPASS mysqldump ${OPTIONS[@]} \
+    -h$DBHOST -P$DBPORT -u$DBUSER $DBNAME $TABLES \
+    | sed $'s$ VALUES $\\\nVALUES\\\n$g' \
+    | sed $'s$),($),\\\n($g' \
+    | sed $'s$ COLLATE=[0-9A-Za-z_]*$$' \
+    | sed $'s$ AUTO_INCREMENT=[0-9]*$$' \
+    > "$outfilename"
 
 echo "done."

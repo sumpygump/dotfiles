@@ -3,11 +3,14 @@
 # Exit on first error
 set -e
 
-sversion="dbconnect v0.5.3"
+sversion="dbconnect v0.6"
+
+# Some defaults
+DBPORT=3306
+DBHOST=127.0.0.1
 
 # DB credentials file
 DBCONF="`pwd`/.dbconf"
-DBPORT=3306
 
 # Handle --init arg
 if [ -n "$1" -a "$1" == "--init" ]; then
@@ -21,6 +24,7 @@ if [ -n "$1" -a "$1" == "--init" ]; then
     echo "DBPASS=" >> $DBCONF
     echo "DBNAME=" >> $DBCONF
     echo "DBPORT=$DBPORT" >> $DBCONF
+    echo "DBHOST=$DBHOST" >> $DBCONF
 
     echo "Created dbconf file $DBCONF"
     echo "Please edit file with correct credentials"
@@ -40,10 +44,11 @@ parameters:" 1>&2
     echo "DBUSER=" 1>&2
     echo "DBPASS=" 1>&2
     echo "DBNAME=" 1>&2
-    echo "DBPORT=3306" 1>&2
+    echo "DBPORT=$DBPORT" 1>&2
+    echo "DBPORT=$DBHOST" 1>&2
     echo 1>&2
     echo "Or run \`dbconnect --init\` to create the file for you" 1>&2
     exit 1
 fi
 
-MYSQL_PWD=$DBPASS mysql -P$DBPORT -u$DBUSER $DBNAME
+MYSQL_PWD=$DBPASS mysql -h$DBHOST -P$DBPORT -u$DBUSER $DBNAME
