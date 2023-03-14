@@ -15,4 +15,16 @@ These are dotfiles that setup a sane environment I am used to on a linux machine
    * `.bashrc`
    * `.bash_aliases`
  * git config file `.gitconfig`
- * screen configuration `.screenrc`
+
+## Starship
+
+Install starship https://starship.rs/guide/#%F0%9F%9A%80-installation
+
+Copy or symlink the file `.config/starship.toml` to `~/.config/starship.toml`
+
+Be sure the following is in your `~/.profile` or `~/.bashrc` file:
+
+```
+# Starship
+eval "$(starship init bash)"
+```
