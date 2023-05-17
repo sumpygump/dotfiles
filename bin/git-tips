@@ -44,6 +44,10 @@ echo ":: Delete a local branch"
 info "> git branch -d <branch-name>"
 echo
 
+echo ":: Delete a remote branch"
+info "> git remote <remote-name> --delete <branch-name>"
+echo
+
 echo ":: See the changes in a branch ignoring commits merged in"
 info "> git diff HEAD...<branch-name>"
 echo "This command can be used more generically between any to git refs, but the
