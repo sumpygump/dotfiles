@@ -6,13 +6,65 @@
 # It's useful to see the breakdown of docblock tags (ie. @author) across
 # several files within a directory.
 
-UNIQ=true
+SHOW_FILES=true
+VERBOSE=false
+
+# Detect if being piped to stdout or piped
+if [ -t 1 ] ; then COLORS=always; else COLORS=never; fi
+
+setup_terminal() {
+    TPUT_RESET=""
+    TPUT_RED=""
+
+    # Is stderr on the terminal? If not, then fail
+    test -t 2 || return 1
+
+    if command -v tput >/dev/null 2>&1; then
+        if [ $(($(tput colors 2>/dev/null))) -ge 8 ]; then
+            # Enable colors
+            TPUT_RESET="$(tput sgr 0)"
+            TPUT_RED="$(tput setaf 1)"
+        fi
+    fi
+
+    return 0
+}
+error() {
+    printf >&2 "${TPUT_RED}%s${TPUT_RESET}\n" "$*"
+}
+
+show_usage() {
+    echo "DV: Docblock values search"
+    echo "Searches through php files for specific patterns"
+    echo "and shows how many times it appears in the source code"
+    echo "usage: dv [OPTION] <pattern> <path>"
+    echo
+    echo "Options:"
+    echo "  -h  show help"
+    echo "  -f  show filenames where pattern appears"
+    echo "  -v  verbose mode: show command that ran to produce the results"
+    echo
+    echo "Examples:"
+    echo "  dv @author src  :  shows unique number of times author tag is used"
+    echo "  dv '@package Qi$' src  :  the dollar sign at the end will match new line"
+    echo "  dv -f '@package Qi' src  :  shows the filenames for each match instead of counts"
+}
+
+setup_terminal || echo >/dev/null
 
 # Process options
-while getopts "dn" opt; do
+# (Note the colon in front of the list suppresses the 'illegal argument' error)
+while getopts ":hfv" opt; do
     case $opt in
-        n)
-            UNIQ=false
+        h)
+            show_usage
+            exit 0
+            ;;
+        f)
+            SHOW_FILES=false
+            ;;
+        v)
+            VERBOSE=true
             ;;
     esac
 done
@@ -20,17 +72,29 @@ done
 # Shift off the used args
 shift $((OPTIND-1))
 
-if [ -z "$1" -o -z "$2" ]; then
-    echo "usage: $0 <param> <path>"
-    exit
+# Handle help as an arg
+if [ "$1" == "--help" ]; then
+    show_usage
+    exit 0
 fi
 
-if [ $UNIQ == true ] ; then
-    cmd="egrep -r --include=\*.php -h '$1' $2 | sort | uniq -c | sort -nr"
-    echo $cmd
-    egrep -r --include=\*.php -h $1 $2 | sort | uniq -c | sort -nr
+# Handle missing required args
+if [ -z "$1" -o -z "$2" ]; then
+    error "Missing required params"
+    echo 'usage: dv [OPTION] <pattern> <path>'
+    exit 1
+fi
+
+if [ $SHOW_FILES == true ] ; then
+    # Will display the matches with counts
+    if [ $VERBOSE == true ]; then
+        echo "egrep -Tr --include=\*.php -h '$1' $2 | sort | uniq -c | sort -nr"
+    fi
+    egrep --color=$COLORS -Tr --include=\*.php -h $"$1" $2 | sort | uniq -c | sort -nr
 else
-    cmd="egrep -r --include=\*.php -h '$1' $2 | sort"
-    echo $cmd
-    egrep -r --include=\*.php $1 $2
+    # Will display the matches with the files
+    if [ $VERBOSE == true ]; then
+        echo "egrep -Trn --include=\*.php '$1' $2 | sort"
+    fi
+    egrep --color=$COLORS -Trn --include=\*.php $"$1" $2 | sort
 fi
