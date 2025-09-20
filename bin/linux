@@ -1,0 +1,135 @@
+#!/bin/bash
+
+: ${DIALOG=dialog}
+
+LOGO="
+▄    ▄                                  ▄   ▄
+█    ▄ ▄▄▄  ▄  ▄ ▄   ▄  ▄▄▄ ▄▄▄  ▄▄▄   █ ▀ ▄█▄
+█    █ █  █ █  █  ▀▄▀  █    █  ▀  ▄▄█ ▀█▀   █
+█▄▄▄ █ █  █ ▀▄▄█ ▄▀ ▀▄ ▀▄▄▄ █    ▀▄▄█  █    ▀▄▀
+"
+
+IMG_OPTS=("jansen/lfs-automate-step-04" "LFS step 04" "ubuntu:18.04" "Ubuntu 18.04" "ubuntu:20.04" "Ubuntu 20.04" "ubuntu:21.04" "Ubuntu 21.04" "ubuntu:21.10" "Ubuntu 21.10" "ubuntu:22.04" "Ubuntu 22.04" "ubuntu:24.04" "Ubuntu 24.04" "ubuntu:25.04" "Ubuntu 25.04")
+EXISTING_CONTAINERS=`docker ps -a --format=' - {{.Names}}'|sort`
+
+red() {
+    if [ -t 0 ]; then
+        printf "\E[31m"
+    fi
+}
+op() {
+    if [ -t 0 ]; then
+        printf "\E[39;49m"
+    fi
+}
+
+# Detect if dialog is available
+which $DIALOG > /dev/null
+if [ $? -eq 1 ]; then
+    red; echo "Error: $DIALOG not installed."; op
+    exit 1
+fi
+
+which docker > /dev/null
+if [ $? -eq 1]; then
+    red; echo "Error: docker not found."; op
+    exit 1
+fi
+
+# Intro screen
+$(dialog --backtitle "Linuxcraft" --title "Welcome" --cr-wrap \
+    --msgbox "${LOGO}\nLet's make a gnu/linux docker container..." 16 70 2>&1 >/dev/tty)
+
+# Step 1: Name of docker container
+CONTAINER_NAME=$(dialog --clear --backtitle "Linuxcraft" --title "Step 1 of 1: Name" \
+    --cr-wrap \
+    --inputbox "Here are the current container names:\n$EXISTING_CONTAINERS\n\n What should be the name of your container (no spaces)" 0 0 "linux1" 2>&1 >/dev/tty)
+retval=$?
+if [ $retval -eq 1 ]; then
+    # User chose cancel
+    clear
+    exit 0
+fi
+
+# Step 2: Select image
+# Prompt user to select which docker image to use
+value=$(dialog --clear --backtitle "Linuxcraft" --title "Step 2 of 2: Docker image" \
+    --menu "Select linux docker image" 0 0 8 "${IMG_OPTS[@]}" 2>&1 >/dev/tty)
+retval=$?
+case $retval in
+    0)
+        clear;
+        selected_option=$value
+    ;;
+    1)
+        #User chose "Cancel"
+        clear
+        exit 0
+    ;;
+    255)
+        clear
+        exit 255
+    ;;
+esac
+
+DOCKER_IMAGE="$selected_option"
+
+clear
+echo "%% Linuxcraft %%"
+echo "==============="
+echo
+echo "Your selections:"
+echo " * Name: $CONTAINER_NAME"
+echo " * Docker image: $DOCKER_IMAGE"
+
+LOCATION="$PWD/$CONTAINER_NAME"
+
+echo
+echo "The files (on host) will be in directory $LOCATION"
+
+if [ -d "$LOCATION" ]; then
+    red && echo "Directory $LOCATION already exists. Are you sure?" && op
+fi
+
+# Final prompt
+read -p "Shall I provision it? (Y/n): " answer
+if [ "$answer" != "" ] && [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+    echo "Aborting."
+    exit 0
+fi
+
+# Set up the container's directory for the app
+mkdir -p $LOCATION
+
+echo "#!/bin/bash" > $LOCATION/dbash
+echo "NAME=$CONTAINER_NAME" >> $LOCATION/dbash
+echo "docker exec --privileged -i -t \$NAME bash" >> $LOCATION/dbash
+chmod a+x $LOCATION/dbash
+
+# Some notes
+echo "+-------------------------------------------------------------------------------+"
+echo "                           [ Some notes to review ]"
+echo
+echo "  If all goes well in the next step, the docker container will be created."
+echo "  It is named $CONTAINER_NAME."
+echo "  You can check if it is running by executing 'docker ps -a'"
+echo "  You can start and stop with 'docker start $CONTAINER_NAME' or 'docker stop $CONTAINER_NAME'"
+echo "  You can use the script 'dbash' to connect to the bash terminal of the image"
+echo
+echo "  Enjoy!"
+echo
+echo "+-------------------------------------------------------------------------------+"
+echo
+
+# Run the docker command to create the container
+command="docker create --privileged --name $CONTAINER_NAME -v $LOCATION/app:/app -t -i $DOCKER_IMAGE bash"
+echo $command
+echo
+
+$command
+if [ $? -ne 0 ]; then
+    red; echo "Oh, there was a problem provisioning the container. See above"
+    exit 1
+fi
+
+exit 0

@@ -1,0 +1,67 @@
+#!/usr/bin/php
+<?php
+
+# Note: This requires php composer package qi-console.
+# To install, run `composer global require sumpygump/qi-console`
+
+include $_SERVER['HOME'] . '/.config/composer/vendor/autoload.php';
+
+$args = new Qi_Console_ArgV($argv);
+$terminal = new Qi_Console_Terminal();
+
+$games = [
+    '1' => ['adventure', 'Adventure'],
+    ['alienwave', 'Alienwave'],
+    ['arithmetic', 'Arithmetic'],
+    ['atc', 'Air Traffic Controller'],
+    ['backgammon', 'Backgammon'],
+    ['boggle', 'Boggle'],
+    ['cpat', 'Solitaire games'],
+    ['cblocks', 'Blocks game'],
+    ['cmines', 'Minesweeper'],
+    ['cribbage', 'Cribbage'],
+    ['csokoban', 'Sokoban'],
+    ['dab 10', 'Dots and Bars'],
+    ['go-fish', 'Go Fish'],
+    ['greed', 'Greed'],
+    ['hack', 'Hack'],
+    ['hangman', 'Hangman'],
+    ['hunt', 'Hunt'],
+    ['mille', 'Mille Bournes'],
+    ['monop', 'Monopoly'],
+    ['ninvaders', 'Space Invaders'],
+    ['robots', 'Robots'],
+    ['sl', 'Train'],
+    ['sl-h', 'A lot of trains'],
+    ['snake', 'Snake'],
+    ['tetris', 'Tetris'],
+    ['worm', 'Worm'],
+];
+
+$gameOptions = [];
+foreach ($games as $index => $game) {
+    $gameOptions[$index] = $game[1] . ' (' . $game[0] . ')';
+}
+
+$menu = new Qi_Console_Menu('Cli Games', $gameOptions);
+$menu->displayMenuItems();
+
+$input = $menu->prompt('Enter Choice [#q] >');
+
+$input = trim($input);
+if (substr($input, 0, 1) == 'q') {
+    exit(0);
+}
+
+if (!isset($games[$input])) {
+    echo "Invalid option.\n";
+    exit(1);
+}
+
+$game = $games[$input];
+$cmd = 'clear; ' . $game[0];
+$cmd = $game[0];
+
+passthru($cmd);
+
+exit(0);

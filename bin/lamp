@@ -10,7 +10,7 @@ LOGO="
                 █
 "
 
-PHP_OPTS=("latest-1404-php5" "5.3" "latest-1604-php5" "5.4" "latest-1404" "7.3.3" "latest-1604" "7.4.8" "latest-1804" "7.4.8")
+PHP_OPTS=("latest-1404-php5" "5.3" "latest-1604-php5" "5.4" "latest-1404" "7.3.3" "latest-1604" "7.4.8" "latest-1804" "7.4.8" "latest-2004-php8" "8.0.10")
 EXISTING_CONTAINERS=`docker ps -a --format=' - {{.Names}}'|sort`
 EXISTING_PORTS=`docker ps -a --format=' - {{.Names}}\t {{.Ports}}'|sort|sed 's#0.0.0.0:##g'|sed 's#/tcp##g'`
 
@@ -29,6 +29,12 @@ op() {
 which $DIALOG > /dev/null
 if [ $? -eq 1 ]; then
     red; echo "Error: $DIALOG not installed."; op
+    exit 1
+fi
+
+which docker > /dev/null
+if [ $? -eq 1]; then
+    red; echo "Error: docker not found."; op
     exit 1
 fi
 
@@ -147,9 +153,9 @@ echo "+-------------------------------------------------------------------------
 echo
 
 # Run the docker command to create the container
-echo docker run --name $CONTAINER_NAME -t -p "$MAILHOG_PORT:8025" -p "$APACHE_PORT:80" -p "$MYSQL_PORT:3306" -v $LOCATION/app:/app -v $LOCATION/mysql:/var/lib/mysql $DOCKER_IMAGE
+echo docker create --name $CONTAINER_NAME -p "$MAILHOG_PORT:8025" -p "443:443" -p "$APACHE_PORT:80" -p "$MYSQL_PORT:3306" -v $LOCATION/app:/app -v $LOCATION/mysql:/var/lib/mysql $DOCKER_IMAGE
 echo
-docker run --name $CONTAINER_NAME -t -p "$MAILHOG_PORT:8025" -p "$APACHE_PORT:80" -p "$MYSQL_PORT:3306" -v $LOCATION/app:/app -v $LOCATION/mysql:/var/lib/mysql $DOCKER_IMAGE
+docker create --name $CONTAINER_NAME -p "$MAILHOG_PORT:8025" -p "443:443" -p "$APACHE_PORT:80" -p "$MYSQL_PORT:3306" -v $LOCATION/app:/app -v $LOCATION/mysql:/var/lib/mysql $DOCKER_IMAGE
 result=$?
 
 if [ $result -ne 0 ]; then

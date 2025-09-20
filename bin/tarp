@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# TARP: Think about random packages
+# --------------------------------
+# Get a package of the day to learn about
+# Or a random package.
+
+OS=$(uname)
+PM="brew"
+if [ "$OS" == "Linux" ]; then
+    PM="dpkg"
+fi
+
+get_packages() {
+    if [ "$PM" == "dpkg" ]; then
+        dpkg --get-selections | grep -v deinstall | awk '{print $1}'
+    else
+        brew list
+    fi
+}
+
+package_of_the_day() {
+    # Random package of the day
+    # For our random seed; so it shuffles the same way
+    RANDOM_SEED=6672423784237482378432784324823
+    RANDOM_SOURCE=~/.randsome
+    echo $RANDOM_SEED > $RANDOM_SOURCE
+
+    # Populate array with all the installed packages
+    packages=($(get_packages))
+
+    # Shuffle the list
+    shuffled=($(printf '%s\n' "${packages[@]}" | sort --random-source $RANDOM_SOURCE -R))
+
+    # Calculate the current day (since epoch)
+    day_number=$(( $(date +%s)/86400 ))
+    count="${#shuffled[@]}"
+    index=$(( $day_number % $count ))
+
+    echo "---------------------------------"
+    echo "*** RANDOM PACKAGE OF THE DAY ***"
+    echo "Day $day_number : ${shuffled[$index]}"
+    echo "---------------------------------"
+    show_info "${shuffled[$index]}"
+
+    # Clean up
+    rm $RANDOM_SOURCE
+}
+
+random_package() {
+    # Populate array with all the installed dpkg packages
+    packages=($(get_packages))
+
+    # Shuffle the list
+    shuffled=($(printf '%s\n' "${packages[@]}" | sort -R))
+
+    echo "---------------------------"
+    echo "***   RANDOM  PACKAGE   ***"
+    echo "${shuffled[0]}"
+    echo "---------------------------"
+    show_info "${shuffled[0]}"
+}
+
+show_info() {
+    if [ "$PM" == "dpkg" ]; then
+        dpkg --status "$1"
+        echo
+        apt-cache rdepends "$1"
+    else
+        # TODO: Fix this
+        brew info "$1"
+        echo
+        echo "Used by:"
+        echo "--------"
+        brew uses --installed "$1"
+    fi
+}
+
+if [ "$1" == "--help" ]; then
+    echo "tarp : Think about random packages you have installed"
+    echo "Usage:"
+    echo "  tarp [--today|--random]"
+    echo
+    echo "  --today (default) : Show the random package for the day"
+    echo "  --random          : Show a random package"
+    exit 0
+fi
+
+if [ "$1" == "--random" ]; then
+    random_package
+else
+    package_of_the_day
+fi
+
+exit 0
