@@ -54,6 +54,13 @@ echo "This command can be used more generically between any to git refs, but the
 important thing to remember is the three dots"
 echo
 
+echo ":: Show files that were affected between commits"
+info "> git diff <commit-one>..<commit-two> --name-status"
+echo "Using --name-status will show the filenames and status of change for each file,
+and using --name-only will show only the name. Using --stat instead will show the
+number of lines changed per file. Can also use this with the log command"
+echo
+
 echo ":: See what is in a stash without applying it"
 info "> git stash show -p <stash-index>"
 echo "This will give you a diff patch of what is in the specified stash"
