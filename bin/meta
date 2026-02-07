@@ -1,0 +1,161 @@
+#!/usr/bin/env python
+"""
+meta - media manager tool
+
+Help read/write meta tags in audio files
+"""
+
+import os
+import sys
+import subprocess
+from glob import glob
+
+VERSION = 0.1
+
+
+def main(args):
+    """Main program logic"""
+
+    if args[0] in ("-v", "--version", "version"):
+        print(VERSION)
+    elif args[0] == "info":
+        if len(args[1:]) < 1:
+            print("Missing filename argument")
+            sys.exit(1)
+        filename = args[1]
+        show_info(filename)
+    elif args[0] == "embed-covers":
+        if len(args[1:]) < 1:
+            print("Missing path argument")
+            sys.exit(1)
+        path = args[1]
+        embed_covers(path)
+    elif args[0] == "set-cover":
+        if len(args[1:]) < 2:
+            print("Missing required two arguments")
+            sys.exit(1)
+        image_file = args[1]
+        audio_file = args[2]
+        set_cover(image_file, audio_file)
+    else:
+        print(f"Unknown action '{args[0]}'")
+        print_usage()
+        return 1
+    return 0
+
+
+def show_info(filename):
+    """Show meta data information for file"""
+    info = read_tags(filename)
+    print(f"{filename}:")
+    for key, value in info.items():
+        print(f"  {key}: {value}")
+
+
+def read_tags(filename):
+    """Read meta tags from filename"""
+
+    base, ext = os.path.splitext(filename)
+    if ext == ".opus":
+        comment = read_opus(filename)
+        meta = parse_opus(comment)
+        return meta
+
+
+def read_opus(filename):
+    """Read meta data for opus file"""
+    file = filename.strip()
+    cmd = ["opusinfo", file]
+    info = subprocess.run(cmd, capture_output=True, text=True)
+    return info.stdout.split("\n")
+
+
+def parse_opus(comment):
+    """Parse the output of opusinfo"""
+    data = {
+        "artist": "",
+        "album": "",
+        "track": "",
+        "title": "",
+        "date": "",
+    }
+    for line in comment:
+        if "=" not in line:
+            continue
+        parts = line.split("=")
+        data[parts[0].strip().lower()] = parts[1]
+
+    return data
+
+
+def embed_covers(path):
+    """Embed covers on opus files in path
+
+    The application Mixxx will create cover files that are the same filename
+    as the audio file, but with the .jpg or .jpeg or .png extension. So this
+    will find all the correct cover image filenames for each audio file and
+    embed/attach them into the file using opentags."""
+
+    files = sorted(glob("*.opus"))
+
+    for file in files:
+        print(f"Processing file '{file}'... ", end="")
+        cover = find_cover(file)
+        if cover is None:
+            print("No cover found.")
+            continue
+
+        print(f"Found cover: '{cover}'", end="")
+        cmd = ["opustags", "--set-cover", cover, "-i", file]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            os.unlink(cover)
+            print(" DEL ", end="")
+        print(" Embedded cover into audio file.")
+
+
+def find_cover(filename):
+    """Find the appropriate cover file based on possibilities"""
+
+    base, ext = os.path.splitext(filename)
+    image_files = (f"{base}.jpeg", f"{base}.jpg", f"{base}.png")
+    for possible in image_files:
+        if os.path.isfile(possible):
+            return possible
+
+    meta = read_tags(filename)
+    if "album" in meta:
+        base = meta["album"]
+        image_files = (f"{base}.jpeg", f"{base}.jpg", f"{base}.png")
+        for possible in image_files:
+            if os.path.isfile(possible):
+                return possible
+
+    return None
+
+
+def set_cover(image, audio_file):
+    """Set a single image as cover to an audio file"""
+    cmd = ["opustags", "--set-cover", image, "-i", audio_file]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    print(result.stdout)
+
+
+def print_usage():
+    print("meta - media meta manager")
+    print("usage: meta <action> [files]")
+    print("\nactions:")
+    print("  info [filename] : show meta data from audio file")
+    print("  embed-covers [path|filename] : will embed cover images into audio files")
+    print(
+        "  set-cover [image-filename] [audio-file] : embed single image into audio file"
+    )
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print_usage()
+        sys.exit(1)
+
+    result = main(sys.argv[1:])
+    sys.exit(result)
