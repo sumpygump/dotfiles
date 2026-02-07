@@ -1,0 +1,160 @@
+#!/bin/bash
+
+VERSION=0.3
+GS_BUCKET_FILE="$HOME/.cloudcrypt_bucket"
+GS_BUCKET="gs://" # Supplied from contents of bucket file
+
+red() {
+    if [ -t 0 ]; then
+        printf "\E[31m"
+    fi
+}
+op() {
+    if [ -t 0 ]; then
+        printf "\E[39;49m"
+    fi
+}
+
+# Function for displaying usage
+display_usage() {
+    echo "cloudcrypt v$VERSION"
+    echo
+    echo "Usage: cloudcrypt [-h] <command> [args]"
+    echo
+    echo "Options:"
+    echo "  -h : Show help"
+    echo "  -p : Crypt path location (cloud side)"
+    echo
+    echo "Commands:"
+    echo "  -p <path> ls : List files available in cloud crypt"
+    echo
+    echo "  -p <path> sync <local_dir> : Synchronize files in remote path and local dir"
+    echo
+    echo "  -p <path> store <filename> : Store file in cloud crypt"
+    echo "            You can provide multiple filename arguments, e.g:"
+    echo "              > cloudcrypt store \"file1.txt\" \"file2.txt\""
+    echo
+    echo "            Note: if you want to pass wildcards to gsutil,"
+    echo "            then put your argument in single quotes, e.g:"
+    echo "              > cloudcrypt store '*.txt'"
+    echo
+    echo "  -p <path> fetch <filename> : Fetch file from cloud crypt"
+}
+
+# First handle arguments and initialization
+# -----------------------------------------
+
+# Handle --help arg
+if [ -n "$1" -a "$1" == "--help" ] || [ "$1" == "-h" ] || [ "$1" == "help" ]; then
+    display_usage
+    exit 0
+fi
+
+# Handle --version arg
+if [ -n "$1" -a "$1" == "--version" ] || [ "$1" == "-v" ]; then
+    echo $VERSION
+    exit 0
+fi
+
+# Get configuration of bucket
+if [ ! -f "$GS_BUCKET_FILE" ]; then
+    red; echo "Config file not found at '$GS_BUCKET_FILE'"; op
+    echo "Create that file and put name of bucket on first line in file"
+    exit 2
+fi
+GS_BUCKET="gs://$(head -n 1 $GS_BUCKET_FILE)"
+
+# Handle -p flag
+CPATH=""
+if [ -n "$1" -a "$1" == "-p" ]; then
+    shift
+    if [ -z "$1" ]; then
+        red;echo "Missing path";op
+        exit 0
+    fi
+    CPATH="$1"
+    shift
+fi
+
+# Shift off the used args
+shift $((OPTIND-1))
+
+if [ -z "$1" ]; then
+    red;echo "Missing command";op
+    display_usage
+    exit 1
+fi
+
+COMMAND=""
+if [ -n "$1" ]; then
+    COMMAND="$1"
+fi
+
+# Main program logic
+# ------------------
+
+if [ $COMMAND == "store" ]; then
+    shift
+
+    # Get filename
+    if [ -z "$1" ]; then
+        red;echo "Missing argument";op
+        echo "Usage: \`cloudcrypt store <filename>\`"
+        exit 2
+    fi
+
+    for filename in "$@"
+    do
+        echo "Storing file to cloud crypt '$CPATH/$filename'"
+        gsutil -m cp "$filename" "$GS_BUCKET/$CPATH/"
+    done
+    exit 0
+fi
+
+if [ $COMMAND == "fetch" ]; then
+    shift
+
+    # Get filename
+    if [ -z "$1" ]; then
+        red;echo "Missing argument";op
+        echo "Usage: \`cloudcrypt fetch <filename>\`"
+        exit 2
+    fi
+
+    filename="$1"
+    echo "Fetching file from cloud crypt '$CPATH/$filename'"
+    gsutil -m cp "$GS_BUCKET/$CPATH/$filename" .
+    exit 0
+fi
+
+if [ $COMMAND == "sync" ]; then
+    shift
+
+    # Get dir
+    if [ -z "$1" ]; then
+        red;echo "Missing argument";op
+        echo "Usage: \`cloudcrypt sync <local_dir>\`"
+        exit 2
+    fi
+
+    dir="$1"
+    echo "Synchronizing files between '$dir' and '$GS_BUCKET/$CPATH/'"
+    gsutil -m rsync -x "\.DS_Store$" "$dir" "$GS_BUCKET/$CPATH/"
+    exit 0
+fi
+
+if [ $COMMAND == "ls" ]; then
+    shift
+
+    if [ "$CPATH" == "" ]; then
+        gsutil ls "$GS_BUCKET/"
+    else
+        gsutil ls "$GS_BUCKET/$CPATH"
+    fi
+
+    exit 0
+fi
+
+red;echo "Unknown command '$COMMAND'";op
+display_usage
+exit 1
