@@ -1,8 +1,9 @@
 #!/bin/bash
 
-VERSION=0.3
+VERSION=0.3.1
 GS_BUCKET_FILE="$HOME/.cloudcrypt_bucket"
 GS_BUCKET="gs://" # Supplied from contents of bucket file
+SYNC_REVERSE=false
 
 red() {
     if [ -t 0 ]; then
@@ -28,7 +29,10 @@ display_usage() {
     echo "Commands:"
     echo "  -p <path> ls : List files available in cloud crypt"
     echo
-    echo "  -p <path> sync <local_dir> : Synchronize files in remote path and local dir"
+    echo "  -p <path> sync [-s] <local_dir> : Synchronize files from local to cloud dir"
+    echo "            Syncing works by having a source -> destination"
+    echo "            By default the local_dir is the source and the cloud path is the destination"
+    echo "            To swap them, use the -s option"
     echo
     echo "  -p <path> store <filename> : Store file in cloud crypt"
     echo "            You can provide multiple filename arguments, e.g:"
@@ -130,6 +134,11 @@ fi
 if [ $COMMAND == "sync" ]; then
     shift
 
+    if [ -n "$1" -a "$1" == "-s" ]; then
+        SYNC_REVERSE=true
+        shift
+    fi
+
     # Get dir
     if [ -z "$1" ]; then
         red;echo "Missing argument";op
@@ -138,8 +147,14 @@ if [ $COMMAND == "sync" ]; then
     fi
 
     dir="$1"
-    echo "Synchronizing files between '$dir' and '$GS_BUCKET/$CPATH/'"
-    gsutil -m rsync -x "\.DS_Store$" "$dir" "$GS_BUCKET/$CPATH/"
+
+    if [ "$SYNC_REVERSE" == "true" ]; then
+        echo "Synchronizing files from '$GS_BUCKET/$CPATH/' to '$dir'"
+        gsutil -m rsync -x "\.DS_Store$" "$GS_BUCKET/$CPATH/" "$dir"
+    else
+        echo "Synchronizing files from '$dir' to '$GS_BUCKET/$CPATH/'"
+        gsutil -m rsync -x "\.DS_Store$" "$dir" "$GS_BUCKET/$CPATH/"
+    fi
     exit 0
 fi
 
