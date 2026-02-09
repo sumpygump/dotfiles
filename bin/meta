@@ -136,9 +136,30 @@ def find_cover(filename):
 
 def set_cover(image, audio_file):
     """Set a single image as cover to an audio file"""
+
+    is_url = image.startswith("http")
+
+    # If it is a URL, download it to a temp file
+    if is_url:
+        cmd = ["wget", image, "-O", ".tmpcover.jpg"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(result.stdout)
+            print(result.stderr)
+            return 1
+        image = ".tmpcover.jpg"
+
+    # Set the cover to the audio file
     cmd = ["opustags", "--set-cover", image, "-i", audio_file]
     result = subprocess.run(cmd, capture_output=True, text=True)
-    print(result.stdout)
+    if result.returncode != 0:
+        print(result.stdout)
+        print(result.stderr)
+
+    if is_url:
+        os.unlink(".tmpcover.jpg")
+
+    return 0
 
 
 def print_usage():
