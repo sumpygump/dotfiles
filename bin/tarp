@@ -65,7 +65,7 @@ show_info() {
     if [ "$PM" == "dpkg" ]; then
         dpkg --status "$1"
         echo
-        apt-cache rdepends "$1"
+        apt-cache rdepends "$1" | column
     else
         # TODO: Fix this
         brew info "$1"
