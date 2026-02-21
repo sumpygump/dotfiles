@@ -22,10 +22,12 @@
     # Log commands
     timeline = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
     graph = log --graph --branches --remotes --tags --pretty=format:'%Cblue%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --date-order
+    # Show changes between remote
+    incoming = log --graph --pretty=oneline --abbrev-commit HEAD^..origin/HEAD
     # Show a list of aliases
     alias = config --get-regexp alias
     # Get info about this repo
-    info = "!f() { echo '== Remotes' && git remote -v; \
+    info = "!f() { echo '== Remotes' && git remote -v|grep fetch; \
         printf '\n== Branches (git bb)\n' && git bb | head; \
         printf '\n== Activity (git graph)\n' && git graph -6; \
         printf '\n== You are here (git timeline)\n' && git timeline -6; \

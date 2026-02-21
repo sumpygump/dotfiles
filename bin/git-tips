@@ -61,6 +61,13 @@ and using --name-only will show only the name. Using --stat instead will show th
 number of lines changed per file. Can also use this with the log command"
 echo
 
+echo ":: Show commits between yours and remote (after a git fetch)"
+info "> git log --oneline HEAD^..origin/HEAD"
+echo "After doing a git fetch and pulling in new commits from remote, you may
+want to see what commits have happened before merging them in. You can also use
+--name-status or --stat with it to get more details."
+echo
+
 echo ":: See what is in a stash without applying it"
 info "> git stash show -p <stash-index>"
 echo "This will give you a diff patch of what is in the specified stash"
@@ -77,4 +84,3 @@ info "> git merge -X theirs <branch-name>"
 echo "This will merge in the other branch into the current branch but use a strategy
 such that every time a conflict occurs it will default to use the changes from the
 new branch. Useful if you know that there were no changes made in the target branch."
-echo
