@@ -84,3 +84,8 @@ info "> git merge -X theirs <branch-name>"
 echo "This will merge in the other branch into the current branch but use a strategy
 such that every time a conflict occurs it will default to use the changes from the
 new branch. Useful if you know that there were no changes made in the target branch."
+echo
+
+echo ":: Undo most recent commit"
+info "> git reset HEAD~"
+echo "Only do this if you haven't pushed the updates to the remote branch yet."
